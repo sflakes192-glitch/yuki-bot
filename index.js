@@ -6,29 +6,36 @@ async function startBot() {
 
   const sock = makeWASocket({
     logger: P({ level: "silent" }),
-    auth: state
+    auth: state,
+    browser: ["Yuki", "Chrome", "1.0.0"]
   })
 
   sock.ev.on("creds.update", saveCreds)
 
-  // ✅ WAIT FOR CONNECTION BEFORE PAIRING
+  let pairingRequested = false
+
   sock.ev.on("connection.update", async (update) => {
     const { connection } = update
 
+    if (connection === "connecting" && !pairingRequested) {
+      pairingRequested = true
+
+      try {
+        const number = "2349129517597"
+        const code = await sock.requestPairingCode(number)
+        console.log("🔗 PAIRING CODE:", code)
+      } catch (err) {
+        console.log("Pairing error:", err.message)
+      }
+    }
+
     if (connection === "open") {
-      console.log("✅ Connected to WhatsApp")
+      console.log("✅ Yuki Connected!")
     }
 
     if (connection === "close") {
       console.log("❌ Connection closed, retrying...")
       startBot()
-    }
-
-    // 🔗 SAFE PAIRING (NO MORE 428 ERROR)
-    if (!state.creds.registered && connection === "connecting") {
-      const number = "2349129517597"
-      const code = await sock.requestPairingCode(number)
-      console.log("PAIRING CODE:", code)
     }
   })
 
