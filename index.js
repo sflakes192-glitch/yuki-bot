@@ -10,12 +10,14 @@ async function startBot() {
     printQRInTerminal: false
   })
 
-  // Pairing code
-  if (!sock.authState.creds.registered) {
+  // 🔗 Pairing code (FIXED)
+setTimeout(async () => {
+  if (!state.creds.registered) {
     const number = "2349129517597"
     const code = await sock.requestPairingCode(number)
     console.log("PAIRING CODE:", code)
   }
+}, 5000)
 
   sock.ev.on("creds.update", saveCreds)
 
