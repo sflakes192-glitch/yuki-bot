@@ -6,20 +6,31 @@ async function startBot() {
 
   const sock = makeWASocket({
     logger: P({ level: "silent" }),
-    auth: state,
-    printQRInTerminal: false
+    auth: state
   })
 
-  // 🔗 Pairing code (FIXED)
-setTimeout(async () => {
-  if (!state.creds.registered) {
-    const number = "2349129517597"
-    const code = await sock.requestPairingCode(number)
-    console.log("PAIRING CODE:", code)
-  }
-}, 5000)
-
   sock.ev.on("creds.update", saveCreds)
+
+  // ✅ WAIT FOR CONNECTION BEFORE PAIRING
+  sock.ev.on("connection.update", async (update) => {
+    const { connection } = update
+
+    if (connection === "open") {
+      console.log("✅ Connected to WhatsApp")
+    }
+
+    if (connection === "close") {
+      console.log("❌ Connection closed, retrying...")
+      startBot()
+    }
+
+    // 🔗 SAFE PAIRING (NO MORE 428 ERROR)
+    if (!state.creds.registered && connection === "connecting") {
+      const number = "2349129517597"
+      const code = await sock.requestPairingCode(number)
+      console.log("PAIRING CODE:", code)
+    }
+  })
 
   sock.ev.on("messages.upsert", async ({ messages }) => {
     const m = messages[0]
